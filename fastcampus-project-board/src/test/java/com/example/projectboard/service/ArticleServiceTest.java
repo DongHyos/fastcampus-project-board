@@ -54,12 +54,12 @@ class ArticleServiceTest {
         SearchType searchType = SearchType.TITLE;
         String searchKeyword = "title";
         Pageable pageable = Pageable.ofSize(20);
-        given(articleRepository.findByTitle(searchKeyword, pageable)).willReturn(Page.empty());
+        given(articleRepository.findByTitleContaining(searchKeyword, pageable)).willReturn(Page.empty());
         // When
         Page<ArticleDto> articles = sut.searchArticles(searchType, searchKeyword, pageable);
         // Then
         assertThat(articles).isEmpty();
-        then(articleRepository).should().findByTitle(searchKeyword, pageable);
+        then(articleRepository).should().findByTitleContaining(searchKeyword, pageable);
     }
 
     @DisplayName("게시글을 조회하면, 게시글을 반환한다.")
@@ -126,6 +126,20 @@ class ArticleServiceTest {
                 .hasFieldOrPropertyWithValue("title", dto.title())
                 .hasFieldOrPropertyWithValue("content", dto.content())
                 .hasFieldOrPropertyWithValue("hashtag", dto.hashtag());
+        then(articleRepository).should().getReferenceById(dto.id());
+    }
+
+    @DisplayName("없는 게시글의 수정 정보를 입력하면, 경고 로그를 찍고 아무 것도 하지 않는다.")
+    @Test
+    void givenNonexistentArticleInfo_whenUpdatingArticle_thenLogsWarningAndDoesNothing() {
+        // Given
+        ArticleDto dto = createArticleDto("새 타이틀", "새 내용", "#springboot");
+        given(articleRepository.getReferenceById(dto.id())).willThrow(EntityNotFoundException.class);
+
+        // When
+        sut.updateArticle(dto);
+
+        // Then
         then(articleRepository).should().getReferenceById(dto.id());
     }
 
